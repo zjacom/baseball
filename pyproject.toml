@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "baseball"
+version = "0.1.0"
+description = ""
+authors = ["ksh <ksh@2isys.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+playwright = "^1.51.0"
+mysql-connector-python = "^9.2.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
