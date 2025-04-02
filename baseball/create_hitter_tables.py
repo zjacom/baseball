@@ -190,6 +190,16 @@ CREATE TABLE hitter_situations (
 """
 cursor.execute(create_table_query)
 print("hitter_situations 테이블이 생성되었습니다.")
+# CREATE TABLE game_schedule (
+#     id INT AUTO_INCREMENT PRIMARY KEY,
+#     game_date DATETIME NOT NULL,
+#     away_team VARCHAR(50) NOT NULL,
+#     away_score INT NOT NULL, 
+#     home_team VARCHAR(50) NOT NULL,
+#     home_score INT NOT NULL,
+#     stadium VARCHAR(50) NOT NULL,
+#     UNIQUE KEY unique_game (game_date, away_team)  -- ✅ UNIQUE 제약 조건 추가
+# );
 
 # 연결 종료
 cursor.close()
