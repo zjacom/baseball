@@ -9,6 +9,10 @@ readme = "README.md"
 python = "^3.11"
 playwright = "^1.51.0"
 mysql-connector-python = "^9.2.0"
+sqlalchemy = "^2.0.40"
+pymysql = "^1.1.1"
+pandas = "^2.2.3"
+pandasql = "^0.7.3"
 
 
 [build-system]
