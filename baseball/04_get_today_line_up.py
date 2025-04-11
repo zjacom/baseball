@@ -114,49 +114,39 @@ class BaseballDataScraper:
                 logger.warning(f"페이지 로드 실패 (재시도 {attempt + 1}/{max_retries}): {url}, 오류: {e}")
                 await asyncio.sleep(2)  # 재시도 전 2초 대기
 
-    async def process_player_data(self, page: Page):
-        # 상대별 기록 처리
-        url = f"https://www.koreabaseball.com/Schedule/Schedule.aspx"
-        await self.goto_with_retry(page, url)
-        # await page.select_option('//*[@id="ddlMonth"]', "03")
-        # await asyncio.sleep(5)
-        game_schedule = page.locator('//*[@id="tblScheduleList"]/tbody')
-        game_schedule_elements = game_schedule.locator('tr')
-
-        for i in range(await game_schedule_elements.count()):
-            tr_row = game_schedule_elements.nth(i)
-            td_elements = tr_row.locator('td')
-            td_count = await td_elements.count()
-
-            if td_count == 9:
-                date = await td_elements.nth(0).inner_text()
-                time = await td_elements.nth(1).inner_text()
-                bundle = await td_elements.nth(2).inner_text()
-                parsed_bundle = self.parse_bundle(bundle)
-                if parsed_bundle is None:
-                    continue
-                else:
-                    away_team, away_score, home_team, home_score = parsed_bundle
-                stadium = await td_elements.nth(7).inner_text()
-                timestamp = self.parse_game_datetime(date + time)
-                await self.upsert_data("game_schedule", (timestamp, away_team, away_score, home_team, home_score, stadium))
-            elif td_count == 8:
-                time = await td_elements.nth(0).inner_text()
-                bundle = await td_elements.nth(1).inner_text()
-                parsed_bundle = self.parse_bundle(bundle)
-                if parsed_bundle is None:
-                    continue
-                else:
-                    away_team, away_score, home_team, home_score = parsed_bundle
-                stadium = await td_elements.nth(6).inner_text()
-                timestamp = self.parse_game_datetime(date + time)
-                await self.upsert_data("game_schedule", (timestamp, away_team, away_score, home_team, home_score, stadium))
-
     async def run(self):
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
+            browser = await p.chromium.launch(headless=False)
             page = await browser.new_page()
-            await self.process_player_data(page)
+            url = "https://www.koreabaseball.com/Schedule/GameCenter/Main.aspx"
+            await self.goto_with_retry(page, url)
+
+            # 각 li에 대해 개별적으로 XPath를 사용하여 찾고 클릭
+            ul_xpath = '//*[@id="contents"]/div[3]/div/div[1]/ul'
+
+            # 먼저 li 요소 개수를 확인
+            ul = await page.query_selector(f'xpath={ul_xpath}')
+            li_elements = await ul.query_selector_all('li[class*="game-cont"]')
+            li_count = len(li_elements)
+            print(li_count)
+            
+            for i in range(1, li_count + 1):  # XPath에서는 인덱스가 1부터 시작
+                # 매번 새롭게 특정 인덱스의 li 요소를 찾음
+                li_xpath = f'{ul_xpath}/li[{i}]'
+                try:
+                    # 명시적으로 대기한 후 요소 찾기
+                    li = await page.wait_for_selector(f'xpath={li_xpath}', timeout=5000)
+                    if li:
+                        await li.click()
+                except Exception as e:
+                    print(f"{i}번째 요소를 찾거나 클릭하는 중 오류 발생: {e}")
+                
+                stadium_element = await page.wait_for_selector(f'//*[@id="contents"]/div[3]/div/div[1]/ul/li[{i}]/div[1]/ul/li[1]')
+                game_time_element = await page.wait_for_selector(f'//*[@id="contents"]/div[3]/div/div[1]/ul/li[{i}]/div[1]/ul/li[3]')
+                
+                stadium = await stadium_element.text_content()
+                game_time = await game_time_element.text_content()
+                print(stadium, game_time)
             await browser.close()
 
 async def main():

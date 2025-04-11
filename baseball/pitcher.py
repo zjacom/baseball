@@ -221,9 +221,6 @@ class BaseballDataScraper:
     async def check_player(self, page: Page, player_id: int) -> bool:
         url = f"https://www.koreabaseball.com/Record/Player/PitcherDetail/Basic.aspx?playerId={player_id}"
         await self.goto_with_retry(page, url)
-
-        # //*[@id="cphContents_cphContents_cphContents_playerProfile_imgProgile"]
-        # //*[@id="cphContents_cphContents_cphContents_playerProfile_imgProgile"]
         
         try:
             image_element = await page.locator('//*[@id="cphContents_cphContents_cphContents_playerProfile_imgProgile"]').get_attribute('src')
@@ -273,7 +270,7 @@ class BaseballDataScraper:
             self.str_to_float(whip), self.str_to_float(avg), int(qs)
         )
 
-        # hitters 테이블에 데이터 삽입
+        # pitchers 테이블에 데이터 삽입
         data = (player_id, player_name, team_name, era, games, cg, sho, wins, loses, sv, hld, wpct, tbf, np, ip, hits, doubles, triples, hr, 
                 sac, sf, bb, ibb, so, wp, bk, runs, er, bsv, whip, avg, qs)
         await self.upsert_data("pitchers", data)

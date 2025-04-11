@@ -218,9 +218,6 @@ class BaseballDataScraper:
     async def check_player(self, page: Page, player_id: int) -> bool:
         url = f"https://www.koreabaseball.com/Record/Player/HitterDetail/Basic.aspx?playerId={player_id}"
         await self.goto_with_retry(page, url)
-
-        # //*[@id="cphContents_cphContents_cphContents_playerProfile_imgProgile"]
-        # //*[@id="cphContents_cphContents_cphContents_playerProfile_imgProgile"]
         
         try:
             image_element = await page.locator('//*[@id="cphContents_cphContents_cphContents_playerProfile_imgProgile"]').get_attribute('src')
@@ -395,20 +392,17 @@ class BaseballDataScraper:
         except Exception as e:
             logger.error(f"플레이어 {player_id} 데이터 처리 중 오류: {e}")
 
-    async def run(self, min_p, max_p, start_id: int, end_id: int):
+    async def run(self, start_id: int, end_id: int):
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
             page = await browser.new_page()
 
             for player_id in range(start_id, end_id + 1):
                 if await self.check_player(page, player_id):
-                    print(player_id)
-                    min_p, max_p = min(min_p, player_id), max(max_p, player_id)
                     await self.process_player_data(page, player_id)
 
             await browser.close()
             logger.info(f"총 처리된 선수 수: {self.count}")
-        print(min_p, max_p)
 
 async def main():
     db_config = {
@@ -421,7 +415,7 @@ async def main():
     db_manager = DatabaseManager(**db_config)
     scraper = BaseballDataScraper(db_manager)
     
-    await scraper.run(999999, -1, start_id=50007, end_id=99811)
+    await scraper.run(start_id=50007, end_id=99811)
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -52,8 +52,8 @@ for _, row in stats_case_by_stadium.iterrows():
     # SQL 쿼리 작성
     query = f"""
     SELECT
-        SUM(get_scored) AS home_score_sum,
-        SUM(allow_scored) AS away_score_sum,
+        SUM(scored) AS home_score_sum,
+        SUM(allowed_score) AS away_score_sum,
         SUM(games) AS game_count
     FROM stats_case_by_stadium
     WHERE stadium != '{cur_stadium}'
