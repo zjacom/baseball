@@ -178,25 +178,6 @@ class BaseballDataScraper:
                 er = VALUES(er),
                 avg = VALUES(avg),
                 created_at = NOW();
-            """,
-            "pitcher_situations": """
-            INSERT INTO pitcher_situations (
-                pitcher_id, situation, hits, doubles, triples, hr, bb, hbp, so, wp, bk, avg, created_at
-            ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW()
-            )
-            ON DUPLICATE KEY UPDATE 
-                hits = VALUES(hits),
-                doubles = VALUES(doubles),
-                triples = VALUES(triples),
-                hr = VALUES(hr),
-                bb = VALUES(bb),
-                hbp = VALUES(hbp),
-                so = VALUES(so),
-                wp = VALUES(wp),
-                bk = VALUES(bk),
-                avg = VALUES(avg),
-                created_at = NOW();
             """
         }
         return queries.get(table_name, "")
@@ -359,32 +340,6 @@ class BaseballDataScraper:
             data = (player_id, s_stadium, s_games, s_era, s_wins, s_loses, s_sv, s_hld, s_wpct, s_tbf,
                     s_ip, s_hits, s_hr, s_bb, s_hbp, s_so, s_runs, s_er, s_avg)
             await self.upsert_data("pitcher_stadiums", data)
-
-        # 상황별 기록 처리
-        url = f"https://www.koreabaseball.com/Record/Player/PitcherDetail/Situation.aspx?playerId={player_id}"
-        await self.goto_with_retry(page, url)
-
-        case_by_runners = page.locator('//*[@id="contents"]/div[2]/div[2]/div[1]/table/tbody')
-        cbr_tr_elements = case_by_runners.locator('tr')
-        for i in range(await cbr_tr_elements.count()):
-            row = cbr_tr_elements.nth(i)
-            td_elements = row.locator('td')
-            td_count = await td_elements.count()
-
-            td_values = []
-            for j in range(td_count):
-                text = await td_elements.nth(j).text_content()
-                td_values.append((text or "").strip())
-            
-            if len(td_values) != 1:
-                ru_situation, ru_hits, ru_doubles, ru_triples, ru_hr, ru_bb, ru_hbp, ru_so, ru_wp, ru_bk, ru_avg = td_values
-                ru_situation, ru_hits, ru_doubles, ru_triples, ru_hr, ru_bb, ru_hbp, ru_so, ru_wp, ru_bk, ru_avg = (
-                    ru_situation.strip(), int(ru_hits), int(ru_doubles), int(ru_triples), int(ru_hr), int(ru_bb),
-                    int(ru_hbp), int(ru_so), int(ru_wp), int(ru_bk), self.str_to_float(ru_avg)
-                )
-                data = (player_id, ru_situation, ru_hits, ru_doubles, ru_triples, ru_hr, ru_bb,
-                        ru_hbp, ru_so, ru_wp, ru_bk, ru_avg)
-                await self.upsert_data("pitcher_situations", data)
 
     async def run(self, start_id: int, end_id: int):
         async with async_playwright() as p:

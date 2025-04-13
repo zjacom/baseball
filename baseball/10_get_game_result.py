@@ -157,12 +157,7 @@ class BaseballDataScraper:
                 else:
                     result = 1
                     
-                game_data = (
-                    dt,
-                    away_team,
-                    home_team,
-                    result
-                )
+                game_data = (dt, away_team, home_team, result)
                 await self.insert_data("game_records", game_data)
 
             await browser.close()

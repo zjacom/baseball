@@ -174,26 +174,6 @@ class BaseballDataScraper:
                 hbp = VALUES(hbp),
                 so = VALUES(so),
                 gdp = VALUES(gdp)
-            """,
-            "hitter_situations": """
-            INSERT INTO hitter_situations (
-                hitter_id, situation, avg, ab, hits, doubles, triples, hr, rbi, bb, 
-                hbp, so, gdp
-            ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-            )
-            ON DUPLICATE KEY UPDATE 
-                avg = VALUES(avg),
-                ab = VALUES(ab),
-                hits = VALUES(hits),
-                doubles = VALUES(doubles),
-                triples = VALUES(triples),
-                hr = VALUES(hr),
-                rbi = VALUES(rbi),
-                bb = VALUES(bb),
-                hbp = VALUES(hbp),
-                so = VALUES(so),
-                gdp = VALUES(gdp)
             """
         }
         return queries.get(table_name, "")
@@ -359,35 +339,6 @@ class BaseballDataScraper:
                 data = (player_id, s_stadium, s_games, s_avg, s_pa, s_ab, s_runs, s_hits, s_doubles, 
                         s_triples, s_hr, s_rbi, s_sb, s_cs, s_bb, s_hbp, s_so, s_gdp)
                 await self.upsert_data("hitter_stadiums", data)
-
-            # 상황별 기록 처리
-            url = f"https://www.koreabaseball.com/Record/Player/HitterDetail/Situation.aspx?playerId={player_id}"
-            await self.goto_with_retry(page, url)
-
-            case_by_runners = page.locator('//*[@id="contents"]/div[2]/div[2]/div[1]/table/tbody')
-            cbr_tr_elements = case_by_runners.locator('tr')
-            for i in range(await cbr_tr_elements.count()):
-                row = cbr_tr_elements.nth(i)
-                td_elements = row.locator('td')
-                td_count = await td_elements.count()
-
-                td_values = []
-                for j in range(td_count):
-                    text = await td_elements.nth(j).text_content()
-                    td_values.append((text or "").strip())
-                
-                if len(td_values) != 1:
-                    r_situation, r_avg, r_ab, r_hits, r_doubles, r_triples, r_hr, r_rbi, r_bb, r_hbp, r_so, r_gdp = td_values
-                    r_situation = r_situation.strip()
-                    r_avg = s_avg = self.str_to_float(r_avg)
-                    r_ab, r_hits, r_doubles, r_triples, r_hr, r_rbi, r_bb, r_hbp, r_so, r_gdp = (
-                        int(r_ab), int(r_hits), int(r_doubles), int(r_triples), int(r_hr), 
-                        int(r_rbi), int(r_bb), int(r_hbp), int(r_so), int(r_gdp)
-                    )
-
-                    data = (player_id, r_situation, r_avg, r_ab, r_hits, r_doubles, r_triples, 
-                            r_hr, r_rbi, r_bb, r_hbp, r_so, r_gdp)
-                    await self.upsert_data("hitter_situations", data)
 
         except Exception as e:
             logger.error(f"플레이어 {player_id} 데이터 처리 중 오류: {e}")

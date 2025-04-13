@@ -50,19 +50,6 @@ class DatabaseManager:
             finally:
                 cursor.close()
 
-    async def execute_insert(self, query: str, data: Tuple):
-        async with self.get_connection() as conn:
-            try:
-                cursor = conn.cursor()
-                cursor.execute(query, data)
-                conn.commit()
-                # logger.info("데이터 삽입/업데이트 성공")
-            except mysql.connector.Error as err:
-                logger.error(f"데이터베이스 오류: {err}")
-                raise
-            finally:
-                cursor.close()
-
 class BaseballDataScraper:
     def __init__(self, db_manager: DatabaseManager):
         self.db_manager = db_manager
@@ -78,7 +65,7 @@ class BaseballDataScraper:
         queries = {
             "today_lineup": """CREATE TABLE IF NOT EXISTS today_lineup (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                game_date DATE,
+                game_date TIMESTAMP,
                 player VARCHAR(50),
                 team VARCHAR(50),
                 position INT,
@@ -104,7 +91,7 @@ class BaseballDataScraper:
     async def insert_data(self, table_name: str, data: Tuple):
         """데이터 삽입/업데이트 메서드"""
         query = self._get_insert_query(table_name)
-        await self.db_manager.execute_insert(query, data)
+        await self.db_manager.execute_query(query, data)
 
     async def goto_with_retry(self, page: Page, url: str, max_retries: int = 3):
         for attempt in range(max_retries):

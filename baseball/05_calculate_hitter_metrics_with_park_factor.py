@@ -93,6 +93,14 @@ select_hitter_slg_query = text("""
     WHERE hitter_id = :hitter_id
 """)
 
+upsert_hitter_metric_query = text("""
+    INSERT INTO hitter_metrics (hitter_id, wRC_plus, OPS_plus)
+    VALUES (:hitter_id, :wRC_plus, :OPS_plus)
+    ON DUPLICATE KEY UPDATE
+        wRC_plus = VALUES(wRC_plus),
+        OPS_plus = VALUES(OPS_plus);
+""")
+
 for row in select_today_lineup_results:
     player, team, position, stadium = row
     # 타자일 경우
@@ -120,7 +128,11 @@ for row in select_today_lineup_results:
         # OPS_plus 계산
         ops_plus = (100 / park_factor) * ((obp / league_obp) + (slg / league_slg) - 1)
 
-        print(player, wRC_plus, ops_plus)
+        data = {
+            "hitter_id": hitter_id,
+            "wRC_plus": wRC_plus,
+            "OPS_plus": ops_plus
+        }
 
-# with engine.begin() as conn:
-#     conn.execute(upsert_hitter_remain_metrics_query, data)
+        with engine.begin() as conn:
+            conn.execute(upsert_hitter_metric_query, data)
