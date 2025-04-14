@@ -48,6 +48,11 @@ select_league_slg_query = text("""
     FROM hitters;
 """)
 
+select_league_pa_query = text("""
+    SELECT SUM(pa) as league_pa
+    FROM hitters;
+""")
+
 with engine.connect() as conn:
     select_league_runs_result = conn.execute(select_league_runs_query)
     league_runs = int(select_league_runs_result.scalar())
@@ -60,6 +65,9 @@ with engine.connect() as conn:
 
     select_league_slg_result = conn.execute(select_league_slg_query)
     league_slg = float(select_league_slg_result.scalar())
+
+    select_league_pa_result = conn.execute(select_league_pa_query)
+    league_pa = int(select_league_pa_result.scalar())
 
 select_today_lineup_query = text("""
     SELECT player, team, position, stadium
@@ -93,6 +101,12 @@ select_hitter_slg_query = text("""
     WHERE hitter_id = :hitter_id
 """)
 
+select_hitter_pa_query = text("""
+    SELECT SUM(pa)
+    FROM hitters
+    WHERE hitter_id = :hitter_id
+""")
+
 upsert_hitter_metric_query = text("""
     INSERT INTO hitter_metrics (hitter_id, wRC_plus, OPS_plus)
     VALUES (:hitter_id, :wRC_plus, :OPS_plus)
@@ -113,6 +127,9 @@ for row in select_today_lineup_results:
                 # 타자의 wRC 가져오기
                 select_hitter_wRC_result = conn.execute(select_hitter_wRC_query, {"hitter_id": hitter_id})
                 wRC = float(select_hitter_wRC_result.scalar())
+                # 타자의 PA 가져오기
+                select_hitter_pa_result = conn.execute(select_hitter_pa_query, {"hitter_id": hitter_id})
+                pa = float(select_hitter_pa_result.scalar())
                 # 타자의 OPS 가져오기
                 select_hitter_obp_result = conn.execute(select_hitter_obp_query, {"hitter_id": hitter_id})
                 obp = float(select_hitter_obp_result.scalar())
@@ -124,7 +141,7 @@ for row in select_today_lineup_results:
         # 파크팩터 가져오기
         park_factor = park_factor_dic[stadium]
         # wRC_plus 계산
-        wRC_plus = ((wRC + ((1 - park_factor) * league_runs)) / league_wRC) * 100
+        wRC_plus = ((wRC / pa) / ((league_wRC / league_pa) / park_factor)) * 100
         # OPS_plus 계산
         ops_plus = (100 / park_factor) * ((obp / league_obp) + (slg / league_slg) - 1)
 
