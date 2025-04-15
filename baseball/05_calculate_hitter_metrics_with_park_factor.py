@@ -53,6 +53,11 @@ select_league_pa_query = text("""
     FROM hitters;
 """)
 
+select_league_wOBA_qeury = text("""
+    SELECT AVG(wOBA) as league_wOBA
+    FROM hitter_metrics;
+""")
+
 with engine.connect() as conn:
     select_league_runs_result = conn.execute(select_league_runs_query)
     league_runs = int(select_league_runs_result.scalar())
@@ -68,6 +73,9 @@ with engine.connect() as conn:
 
     select_league_pa_result = conn.execute(select_league_pa_query)
     league_pa = int(select_league_pa_result.scalar())
+
+    select_league_wOBA_result = conn.execute(select_league_wOBA_qeury)
+    league_wOBA = int(select_league_wOBA_result.scalar())
 
 select_today_lineup_query = text("""
     SELECT player, team, position, stadium
@@ -107,6 +115,12 @@ select_hitter_pa_query = text("""
     WHERE hitter_id = :hitter_id
 """)
 
+select_hitter_wOBA_query = text("""
+    SELECT wOBA
+    FROM hitter_metrics
+    WHERE hitter_id = :hitter_id
+""")
+
 upsert_hitter_metric_query = text("""
     INSERT INTO hitter_metrics (hitter_id, wRC_plus, OPS_plus)
     VALUES (:hitter_id, :wRC_plus, :OPS_plus)
@@ -136,6 +150,9 @@ for row in select_today_lineup_results:
                 # 타자의 slg 가져오기
                 select_hitter_slg_result = conn.execute(select_hitter_slg_query, {"hitter_id": hitter_id})
                 slg = float(select_hitter_slg_result.scalar())
+                # 타자의 wOBA 가져오기
+                select_hitter_wOBA_result = conn.execute(select_hitter_wOBA_query, {"hitter_id": hitter_id})
+                wOBA = float(select_hitter_wOBA_result.scalar())
             except:
                 continue
         # 파크팩터 가져오기

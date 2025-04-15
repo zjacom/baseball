@@ -109,7 +109,7 @@ for row in select_hitter_wOBA_results:
         select_team_games_result = conn.execute(select_team_games_query, {"team_name": team})
         team_games = int(select_team_games_result.scalar())
 
-    wRC = (((wOBA - league_wOBA) / wOBA_scale) * (league_pa / league_games) * team_games) + ((league_runs / league_games) * team_games)
+    wRC = (((wOBA - league_wOBA) / wOBA_scale) + (league_runs / league_pa)) * pa
 
     data = {"hitter_id": hitter_id, "wRC": wRC}
     with engine.begin() as conn:

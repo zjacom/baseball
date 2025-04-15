@@ -8,6 +8,8 @@ import mysql.connector
 from mysql.connector import pooling
 from playwright.async_api import async_playwright, Page
 
+from queries.queries import get_query
+
 # 로깅 설정
 logging.basicConfig(
     level=logging.INFO, 
@@ -59,128 +61,9 @@ class BaseballDataScraper:
             return None
         return float(str)
 
-    def _get_upsert_query(self, table_name: str) -> str:
-        """각 테이블별 upsert 쿼리를 반환하는 메서드"""
-        queries = {
-            "hitters": """
-            INSERT INTO hitters (
-                hitter_id, player_name, team_name, avg, games, pa, ab, runs, hits, doubles, triples, hr, 
-                rbi, sb, cs, sac, sf, bb, ibb, hbp, so, gdp, slg, obp, errors, sb_percentage, mh, ops, risp, ph_ba
-            ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-            )
-            ON DUPLICATE KEY UPDATE
-                player_name = VALUES(player_name),
-                team_name = VALUES(team_name),
-                avg = VALUES(avg),
-                games = VALUES(games),
-                pa = VALUES(pa),
-                ab = VALUES(ab),
-                runs = VALUES(runs),
-                hits = VALUES(hits),
-                doubles = VALUES(doubles),
-                triples = VALUES(triples),
-                hr = VALUES(hr),
-                rbi = VALUES(rbi),
-                sb = VALUES(sb),
-                cs = VALUES(cs),
-                sac = VALUES(sac),
-                sf = VALUES(sf),
-                bb = VALUES(bb),
-                ibb = VALUES(ibb),
-                hbp = VALUES(hbp),
-                so = VALUES(so),
-                gdp = VALUES(gdp),
-                slg = VALUES(slg),
-                obp = VALUES(obp),
-                errors = VALUES(errors),
-                sb_percentage = VALUES(sb_percentage),
-                mh = VALUES(mh),
-                ops = VALUES(ops),
-                risp = VALUES(risp),
-                ph_ba = VALUES(ph_ba)
-            """,
-            "hitter_games": """
-            INSERT INTO hitter_games (
-                hitter_id, game_date, opponent_team, avg, pa, ab, runs, hits, doubles, triples, hr, 
-                rbi, sb, cs, bb, hbp, so, gdp
-            ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-            )
-            ON DUPLICATE KEY UPDATE 
-                opponent_team = VALUES(opponent_team),
-                avg = VALUES(avg),
-                pa = VALUES(pa),
-                ab = VALUES(ab),
-                runs = VALUES(runs),
-                hits = VALUES(hits),
-                doubles = VALUES(doubles),
-                triples = VALUES(triples),
-                hr = VALUES(hr),
-                rbi = VALUES(rbi),
-                sb = VALUES(sb),
-                cs = VALUES(cs),
-                bb = VALUES(bb),
-                hbp = VALUES(hbp),
-                so = VALUES(so),
-                gdp = VALUES(gdp)
-            """,
-            "hitter_opponents": """
-            INSERT INTO hitter_opponents (
-                hitter_id, opponent_team, games, avg, pa, ab, runs, hits, doubles, triples, hr, 
-                rbi, sb, cs, bb, hbp, so, gdp
-            ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-            )
-            ON DUPLICATE KEY UPDATE 
-                games = VALUES(games),
-                avg = VALUES(avg),
-                pa = VALUES(pa),
-                ab = VALUES(ab),
-                runs = VALUES(runs),
-                hits = VALUES(hits),
-                doubles = VALUES(doubles),
-                triples = VALUES(triples),
-                hr = VALUES(hr),
-                rbi = VALUES(rbi),
-                sb = VALUES(sb),
-                cs = VALUES(cs),
-                bb = VALUES(bb),
-                hbp = VALUES(hbp),
-                so = VALUES(so),
-                gdp = VALUES(gdp)
-            """,
-            "hitter_stadiums": """
-            INSERT INTO hitter_stadiums (
-                hitter_id, stadium, games, avg, pa, ab, runs, hits, doubles, triples, hr, 
-                rbi, sb, cs, bb, hbp, so, gdp
-            ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-            )
-            ON DUPLICATE KEY UPDATE 
-                games = VALUES(games),
-                avg = VALUES(avg),
-                pa = VALUES(pa),
-                ab = VALUES(ab),
-                runs = VALUES(runs),
-                hits = VALUES(hits),
-                doubles = VALUES(doubles),
-                triples = VALUES(triples),
-                hr = VALUES(hr),
-                rbi = VALUES(rbi),
-                sb = VALUES(sb),
-                cs = VALUES(cs),
-                bb = VALUES(bb),
-                hbp = VALUES(hbp),
-                so = VALUES(so),
-                gdp = VALUES(gdp)
-            """
-        }
-        return queries.get(table_name, "")
-
     async def upsert_data(self, table_name: str, data: Tuple):
         """데이터 삽입/업데이트 메서드"""
-        query = self._get_upsert_query(table_name)
+        query = get_query(table_name)
         await self.db_manager.execute_upsert(query, data)
 
     async def goto_with_retry(self, page: Page, url: str, max_retries: int = 3):
